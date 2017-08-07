@@ -512,6 +512,43 @@ def residual_fn(x,
       return norm_fn(res, name=norm_type)
 
 
+def concat_fn(x,
+                y,
+                norm_type,
+                residual_dropout,
+                filters=None,
+                epsilon=1e-16,
+                name=None,
+                reuse=None):
+  """Returns a function for combining layer input and layer output in 
+  concat sense.
+
+  The returned function on x (layer input) and y (layer output) computes:
+    norm_function(x c+ dropout(y))
+
+  Args:
+    x: tensor, input layer
+    y: tensor, output layer
+    norm_type: string, type of normalizer function
+    residual_dropout: integer, dropout value for residual connection
+    filters: integer, dimension for layer norm, optional
+    epsilon: integer, value of layer norm epsilon
+    name: string, name
+    reuse: bool, whether to reuse
+
+  Returns:
+    residual layer output with applied norm_fn.
+  """
+  with tf.variable_scope(
+      name, default_name="residual", values=[x, y], reuse=reuse):
+    norm_fn = get_norm(norm_type)
+    res = tf.concat( [x, tf.nn.dropout(y, 1.0 - residual_dropout)], 2)
+    if norm_type == "layer":
+      return norm_fn(res, filters=filters, epsilon=epsilon, name=norm_type)
+    else:
+      return norm_fn(res, name=norm_type)
+
+
 def conv_block_internal(conv_fn,
                         inputs,
                         filters,
